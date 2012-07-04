@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <style type="text/css">
+        body
+        {
+            color: #222;
+            font: 14px Arial;
+        }
+        
+        body a
+        {
+            color: #3D5C9D;
+            text-decoration: none;
+        }
+    </style>
+    <script src="Scripts.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+        function renderTodo(row) {
+            var todos = document.getElementById("todoItems");
+            var li = document.createElement("li");
+            var a = document.createElement("a");
+            var a2 = document.createElement("a");
+            var a3 = document.createElement("a");
+            var t = document.createTextNode(row.text);
+
+            a.addEventListener("click", function () {
+                myStorage.indexedDB.deleteTodo(row.timeStamp);
+            }, false);
+
+            a2.addEventListener("click", function () {
+                myStorage.indexedDB.getTodo(row.timeStamp);
+            }, false);
+
+            a3.addEventListener("click", function () {
+                var todo = document.getElementById("todo");
+                myStorage.indexedDB.updateTodo(row.timeStamp, todo.value);
+            }, false);
+
+            a.textContent = " [Delete]";
+            a2.textContent = " [View]";
+            a3.textContent = " [Update]";
+            li.appendChild(t);
+            li.appendChild(a);
+            li.appendChild(a2);
+            li.appendChild(a3);
+            todos.appendChild(li)
+        }
+
+        function addTodo() {
+            var todo = document.getElementById("todo");
+            myStorage.indexedDB.addTodo(todo.value);
+            todo.value = "";
+        }
+
+        function showDetails(result) {
+            var detailsDiv = document.getElementById("detailsDiv");
+            if (result === "")
+                detailsDiv.innerHTML = "No Item Details.";
+            else
+                detailsDiv.innerHTML = "Item Text: " + result.text + "<br/>" +
+                                       "Item Details: " + result.details + "<br/>" +
+                                       "Date Created: " + result.dateCreated;
+        }
+
+        function clearInput() {
+            var todo = document.getElementById("todo");
+            todo.value = "";
+        }
+
+        function init() {
+            myStorage.indexedDB.open(); // open displays the data previously saved
+        }
+
+        window.addEventListener("DOMContentLoaded", init, false);
+    </script>
+</head>
+<body>
+    <ul id="todoItems">
+    </ul>
+    <input type="text" id="todo" name="todo" placeholder="What do you need to do?" style="width: 200px;" />
+    <input type="submit" value="Add Todo Item" onclick="addTodo(); return false;" />
+    <div id="detailsDiv"></div>
+</body>
+</html>

@@ -1,0 +1,2 @@
+This is the IndexedDb example from http://www.html5rocks.com/en/tutorials/indexeddb/todo/, fixed to work on Firefox and with two new functionalities for viewing details data and updating values.
+Note: When debugging local files you cannot access indexed db in firefox, that’s why you need to host this file to you local IIS or Apache server.

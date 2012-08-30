@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title></title>
@@ -71,7 +71,7 @@
         }
 
         function init() {
-            myStorage.indexedDB.open(); // open displays the data previously saved
+            myStorage.indexedDB.create(); // open displays the data previously saved
         }
 
         window.addEventListener("DOMContentLoaded", init, false);
@@ -82,6 +82,7 @@
     </ul>
     <input type="text" id="todo" name="todo" placeholder="What do you need to do?" style="width: 200px;" />
     <input type="submit" value="Add Todo Item" onclick="addTodo(); return false;" />
+    <input type="submit" value="Delete Db" onclick="myStorage.indexedDB.deleteDB(); return false;" />
     <div id="detailsDiv"></div>
 </body>
 </html>

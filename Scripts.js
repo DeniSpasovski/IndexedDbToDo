@@ -1,107 +1,70 @@
 var myStorage = {};
-var indexedDB = window.indexedDB || window.webkitIndexedDB ||
-                window.mozIndexedDB;
 
-if ('webkitIndexedDB' in window) {
-  window.IDBTransaction = window.webkitIDBTransaction;
-  window.IDBKeyRange = window.webkitIDBKeyRange;
-}
-
-var currentDateTime = new Date();
 
 myStorage.indexedDB = {};
-myStorage.indexedDB.db = null;
 
 myStorage.indexedDB.onerror = function(e) {
-  console.log(e);
+	console.log(e);
 };
-var v = 1;
 
 myStorage.indexedDB.create = function() {
+	var request = indexedDB.open("todos");
+	request.onupgradeneeded = function (e) {
+		var db = e.target.result;
 
-  var request = indexedDB.open("todos", v);
+		if (db.objectStoreNames.contains("todo")) {
+			var storeReq = db.deleteObjectStore("todo");
+		}
 
-  request.onupgradeneeded = function (e) {
-    myStorage.indexedDB.db = e.target.result;
-    var db = myStorage.indexedDB.db;
-    // We can only create Object stores in a setVersion transaction;
+		var store = db.createObjectStore("todo", {keyPath: "timeStamp"});
+	};
 
-    if(db.objectStoreNames.contains("todo")) {
-        var storeReq = db.deleteObjectStore("todo");
-    }
+	request.onsuccess = function(e) {
+		e.target.result.close();
+		myStorage.indexedDB.getAllTodoItems();
+	};
 
-    var store = db.createObjectStore("todo",
-        {keyPath: "timeStamp"});
-    
-  }
-
-  request.onsuccess = function(e) {
-    myStorage.indexedDB.db = e.target.result;
-    var db = myStorage.indexedDB.db;
-
-    if (v!= db.version && db.setVersion) {
-      var setVrequest = db.setVersion(v);
-
-      // onsuccess is the only place we can create Object Stores
-      setVrequest.onerror = myStorage.indexedDB.onerror;
-      setVrequest.onsuccess = function(e) {
-        if(db.objectStoreNames.contains("todo")) {
-          db.deleteObjectStore("todo");
-        }
-
-        var store = db.createObjectStore("todo",
-          {keyPath: "timeStamp"});
-		db.close();
-        myStorage.indexedDB.getAllTodoItems();
-      };
-    }
-    else 
-        myStorage.indexedDB.getAllTodoItems();
-  };
-
-  request.onerror = myStorage.indexedDB.onerror;
-}
+	request.onerror = myStorage.indexedDB.onerror;
+};
 
 myStorage.indexedDB.addTodo = function(todoText) {
-var request = indexedDB.open("todos", v);
+	var request = indexedDB.open("todos");
 	request.onsuccess = function(e) {
-	myStorage.indexedDB.db = e.target.result;
-	  var db = myStorage.indexedDB.db;
-	  var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_WRITE);
-	  var store = trans.objectStore("todo");
+		var db = e.target.result;
+		var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_WRITE);
+		var store = trans.objectStore("todo");
+		var currentDateTime = new Date();
+		
+		var data = {
+			"text": todoText,
+			"details": currentDateTime.getTime(),
+			"dateCreated": currentDateTime.toUTCString(currentDateTime.getTime()),
+			"timeStamp": new Date().getTime()
+		};
 
-	  var data = {
-		"text": todoText,
-		"details": currentDateTime.getTime(),
-		"dateCreated": currentDateTime.toUTCString(currentDateTime.getTime()),
-		"timeStamp": new Date().getTime()
-	  };
+		var request = store.put(data);
 
-	  var request = store.put(data);
+		trans.oncomplete = function(e){
+			myStorage.indexedDB.getAllTodoItems();
+			db.close();
+		};
 
-	  request.onsuccess = function(e) {
-		db.close();
-		myStorage.indexedDB.getAllTodoItems();
-	  };
-
-	  request.onerror = function(e) {
-		console.log("Error Adding: ", e);
-	  };
+		request.onerror = function(e) {
+			console.log("Error Adding: ", e);
+		};
 	};
 	request.onerror = myStorage.indexedDB.onerror;
 };
 
 myStorage.indexedDB.deleteTodo = function(id) {
-	var request = indexedDB.open("todos", v);
+	var request = indexedDB.open("todos");
 	request.onsuccess = function(e) {
-		myStorage.indexedDB.db = e.target.result;
-		var db = myStorage.indexedDB.db;
+		var db = e.target.result;
 		var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_WRITE);
 		var store = trans.objectStore("todo");
-
 		var request = store.delete(id);
 
-		request.onsuccess = function(e) {
+		trans.oncomplete = function(e) {
 			db.close();
 			myStorage.indexedDB.getAllTodoItems();
 		};
@@ -114,32 +77,33 @@ myStorage.indexedDB.deleteTodo = function(id) {
 };
 
 myStorage.indexedDB.getTodo = function(id) {
-var request = indexedDB.open("todos", v);
+	var request = indexedDB.open("todos");
 	request.onsuccess = function(e) {
-		myStorage.indexedDB.db = e.target.result;
-		  var db = myStorage.indexedDB.db;
-		  var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_ONLY);
-		  var store = trans.objectStore("todo");
+		var db = e.target.result;
+		var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_ONLY);
+		var store = trans.objectStore("todo");
 
-		  var request = store.get(id);
+		var request = store.get(id);
 
-		  request.onsuccess = function(e) {
-			db.close();
+		request.onsuccess = function(e) {
 			showDetails(e.target.result);
-		  };
+		};
+		
+		trans.oncomplete = function(e) {
+			db.close();
+		};
 
-		  request.onerror = function(e) {
+		request.onerror = function(e) {
 			console.log("Error Getting: ", e);
-		  };
+		};
 	};
 	request.onerror = myStorage.indexedDB.onerror;
 };
 
 myStorage.indexedDB.updateTodo = function(id, newText) {
-	var request = indexedDB.open("todos", v);
+	var request = indexedDB.open("todos");
 	request.onsuccess = function(e) {
-		myStorage.indexedDB.db = e.target.result;
-		var db = myStorage.indexedDB.db;
+		var db = e.target.result;
 		var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_WRITE);
 		var store = trans.objectStore("todo");
 		
@@ -147,35 +111,34 @@ myStorage.indexedDB.updateTodo = function(id, newText) {
 		openCursorReq.onsuccess = function (event) {
 			var cursor = event.target.result;
 			var _object = cursor.value;
+			var currentDateTime = new Date();
 			_object.dateCreated = currentDateTime.toUTCString(currentDateTime.getTime());
 			_object.text = newText;
 			var updateRequest = cursor.update(_object);
 			updateRequest.onerror = updateRequest.onblocked = function () {
 				console.log('Error updating');
-			}
+			};
 
 			updateRequest.onsuccess = function (event) {
+				clearInput();
+			};
+			
+			trans.oncomplete = function(e) {
 				db.close();
 				myStorage.indexedDB.getAllTodoItems();
-				clearInput();
-			}
+			};
 		}
 	};
 	request.onerror = myStorage.indexedDB.onerror;
 };
 
 myStorage.indexedDB.getAllTodoItems = function() {
-	var request = indexedDB.open("todos", v);
+	var request = indexedDB.open("todos");
 	request.onsuccess = function(e) {
-		myStorage.indexedDB.db = e.target.result;
 		var todos = document.getElementById("todoItems");
 		todos.innerHTML = "";
 
-		var db = myStorage.indexedDB.db;
-		db.onversionchange = function (evt) {
-			alert("versionchange");
-		};
-		
+		var db = e.target.result;		
 		var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_WRITE);
 		var store = trans.objectStore("todo");
 
@@ -192,6 +155,10 @@ myStorage.indexedDB.getAllTodoItems = function() {
 			renderTodo(result.value);
 			result.continue();
 		};
+		
+		trans.oncomplete = function(e) {
+			db.close();
+		};
 
 		showDetails("");
 		cursorRequest.onerror = myStorage.indexedDB.onerror;
@@ -204,13 +171,14 @@ myStorage.indexedDB.deleteDB = function (){
     deleteRequest.onsuccess = function (e)
     {
 		alert("deleted");
+		myStorage.indexedDB.create();
     }
 	deleteRequest.onblocked = function (e)
     {
 		alert("blocked");
     }
 	deleteRequest.onerror = myStorage.indexedDB.onerror;
-}
+};
 
 myStorage.IDBTransactionModes = { "READ_ONLY": "readonly", "READ_WRITE": "readwrite", "VERSION_CHANGE": "versionchange" }; 
 

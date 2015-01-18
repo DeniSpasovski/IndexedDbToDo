@@ -55,6 +55,12 @@
             myStorage.indexedDB.addTodo(todo.value);
             todo.value = "";
         }
+		
+		function searchTodo() {
+            var todo = document.getElementById("todo");
+            myStorage.indexedDB.searchTodo(todo.value);
+            todo.value = "";
+        }
 
         function showDetails(result) {
             var detailsDiv = document.getElementById("detailsDiv");
@@ -83,6 +89,7 @@
     </ul>
     <input type="text" id="todo" name="todo" placeholder="What do you need to do?" style="width: 200px;" />
     <input type="submit" value="Add Todo Item" onclick="addTodo(); return false;" />
+	<input type="submit" value="Search Items" onclick="searchTodo(); return false;" />
     <input type="submit" value="Delete Db" onclick="myStorage.indexedDB.deleteDB(); return false;" />
     <div id="detailsDiv"></div>
 </body>

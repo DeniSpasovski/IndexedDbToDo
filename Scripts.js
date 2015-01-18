@@ -17,6 +17,7 @@ myStorage.indexedDB.create = function() {
 		}
 
 		var store = db.createObjectStore("todo", {keyPath: "timeStamp"});
+		store.createIndex('nametimestamp', ['text', 'timeStamp']);
 	};
 
 	request.onsuccess = function(e) {
@@ -56,6 +57,7 @@ myStorage.indexedDB.addTodo = function(todoText) {
 	request.onerror = myStorage.indexedDB.onerror;
 };
 
+//Delete Item
 myStorage.indexedDB.deleteTodo = function(id) {
 	var request = indexedDB.open("todos");
 	request.onsuccess = function(e) {
@@ -76,6 +78,7 @@ myStorage.indexedDB.deleteTodo = function(id) {
 	request.onerror = myStorage.indexedDB.onerror;
 };
 
+//Gets the first to do item by ID
 myStorage.indexedDB.getTodo = function(id) {
 	var request = indexedDB.open("todos");
 	request.onsuccess = function(e) {
@@ -83,9 +86,9 @@ myStorage.indexedDB.getTodo = function(id) {
 		var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_ONLY);
 		var store = trans.objectStore("todo");
 
-		var request = store.get(id);
+		var storeRequest = store.get(id);
 
-		request.onsuccess = function(e) {
+		storeRequest.onsuccess = function(e) {
 			showDetails(e.target.result);
 		};
 		
@@ -93,12 +96,41 @@ myStorage.indexedDB.getTodo = function(id) {
 			db.close();
 		};
 
-		request.onerror = function(e) {
+		storeRequest.onerror = function(e) {
 			console.log("Error Getting: ", e);
 		};
 	};
 	request.onerror = myStorage.indexedDB.onerror;
 };
+
+//Gets the last created item by Date (not last updated)
+myStorage.indexedDB.searchTodo = function (value) {
+    var request = indexedDB.open("todos");
+	request.onsuccess = function(e) {
+		var db = e.target.result;
+		var trans = db.transaction(["todo"], myStorage.IDBTransactionModes.READ_ONLY);
+		var store = trans.objectStore("todo");
+		var index = store.index('nametimestamp');
+		var keyRange = IDBKeyRange.bound([value,0],[value,new Date().getTime()])
+        var openCursorRequest = index.openCursor(keyRange, 'prev');
+
+		openCursorRequest.onsuccess = function(e) {
+			if(e.target.result)
+				showDetails(e.target.result.value);
+			else
+				showDetails("");
+		};
+		
+		trans.oncomplete = function(e) {
+			db.close();
+		};
+
+		openCursorRequest.onerror = function(e) {
+			console.log("Error Getting: ", e);
+		};
+	};
+	request.onerror = myStorage.indexedDB.onerror;
+}
 
 myStorage.indexedDB.updateTodo = function(id, newText) {
 	var request = indexedDB.open("todos");
